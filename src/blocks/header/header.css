@@ -1,0 +1,6 @@
+.header::after {
+      content: "";
+      display: block;
+      height: 1px;
+      background: rgba(84, 84, 84, 0.7);
+}
