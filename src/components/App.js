@@ -195,7 +195,7 @@ function App() {
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <Routes>
-        <Route path="/react-mesto-auth" element={loggedIn ? <Navigate to="/" replace /> : <Navigate to="/sign-in" replace />} />
+        <Route path="/react-mesto-auth/" element={loggedIn ? <Navigate to="/" replace /> : <Navigate to="/sign-in" replace />} />
         <Route path="/sign-up" element={<Register onRegisterUser={registerNewUser} />} />
         <Route path="/sign-in" element={<Login onAuthorization={authorizationUser} />} />
         <Route path="/" element={<ProtectedRoute loggedIn={loggedIn} element={<Main
