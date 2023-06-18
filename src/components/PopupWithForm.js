@@ -25,11 +25,11 @@ function PopupWithForm({ buttonStateForm, onValidation, textLoadingSubmit, onSub
 
     return (
         <div className={`popup popup_type_${name} ${isOpen ? "popup_opened" : ""}`}>
-            <div className="popup__container">
-                <h3 className={`popup__title popup__title_type_${name}`}>{title}</h3>
-                <form onChange={onValidation} onSubmit={onSubmit} action="#" name={name} className="form form_type_redact">
+            <div className={`popup__container popup__container_type_${name}`}>
+                {title ? <h3 className={`popup__title popup__title_type_${name}`}>{title}</h3> : ""}
+                <form onChange={onValidation} onSubmit={onSubmit} action="#" name={name} className={`form form_type_${name}`}>
                     {children}
-                    <button disabled={buttonStateForm} tabIndex="3" type="submit" className={`form__save form__save_type_${name} ${buttonStateForm ? "form__save_inactive" : ""}`}>{textLoadingSubmit}</button>
+                    {textLoadingSubmit ? <button disabled={buttonStateForm} tabIndex="3" type="submit" className={`form__save form__save_type_${name} ${buttonStateForm ? "form__save_inactive" : ""}`}>{textLoadingSubmit}</button> : ""}
                 </form>
                 <button onClick={onClose} tabIndex="4" type="button" className="popup__close"></button>
             </div>

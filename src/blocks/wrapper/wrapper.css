@@ -1,6 +1,6 @@
 .wrapper {
    background: #000;
-   height: 100%;
    font-family: "Inter", Arial, sans-serif;
-   box-sizing: content-box;
+   max-width: 880px;
+   margin: 0 auto;
 }

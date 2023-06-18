@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Header from "./Header";
 import Main from "./Main";
 import Footer from "./Footer";
 import ImagePopup from "./ImagePopup";
@@ -9,12 +8,20 @@ import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
 import DeleteCardPopup from "./DeleteCardPopop";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import Login from "./Login";
+import Register from "./Register";
+import ProtectedRoute from "./ProtectedRoute";
+import InfoTooltip from "./InfoTooltip";
+import auth from "../utils/Auth";
+
 
 
 function App() {
   const [cards, setCards] = useState([]);
   const [currentUser, setCurrentUser] = useState({});
   const [selectedCard, setSelectedCard] = useState({});
+  const [isInfoToolTip, setIsInfoToolTip] = useState(false);
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
   const [isAddPlacePopupOpen, setIsAddPlacePopupOpen] = useState(false);
   const [isEditAvatarPopupOpen, setIsEditAvatarPopupOpen] = useState(false);
@@ -23,8 +30,14 @@ function App() {
   const [buttonStateForm, setButtonStateForm] = useState(true);
   const [isDeleteCardPopupOpen, setIsDeleteCardPopupOpen] = useState(false);
   const [dataCardDelete, setDataCardDelete] = useState({});
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [isTextInfoToolTip, setIsTextInfoToolTip] = useState("");
+  const [emailUser, setEmailUser] = useState("")
+
+  const navigate = useNavigate()
 
   useEffect(() => {
+    handleTokenCheck()
     Promise.all([api.getUserInfo(), api.getInitialCards()])
       .then(([userInfo, cards]) => {
         setCurrentUser(userInfo)
@@ -42,6 +55,53 @@ function App() {
 
   }, [isEditProfilePopupOpen, isAddPlacePopupOpen, isEditAvatarPopupOpen])
 
+  function logout() {
+    localStorage.removeItem("token")
+    navigate("/sign-in")
+    setLoggedIn(false)
+  }
+  function registerNewUser(data) {
+    auth.register(data)
+      .then(res => {
+        if (res) {
+          setIsInfoToolTip(isInfoToolTip => !isInfoToolTip)
+          setIsTextInfoToolTip("Вы успешно зарегистрировались!")
+          navigate("/sign-in", { replace: true })
+        }
+      })
+      .catch(() => {
+        setIsInfoToolTip(isInfoToolTip => !isInfoToolTip)
+        setIsTextInfoToolTip("Что-то пошло не так! Попробуйте еще раз.")
+      })
+  }
+  function authorizationUser(data) {
+    auth.authorization(data)
+      .then(res => {
+        if (res.token) {
+          localStorage.setItem("token", res.token);
+          setLoggedIn(true)
+          navigate("/", { replace: true })
+        }
+        handleTokenCheck()
+      })
+      .catch(() => {
+        setIsInfoToolTip(isInfoToolTip => !isInfoToolTip)
+        setIsTextInfoToolTip("Что-то пошло не так! Попробуйте еще раз.")
+      })
+  }
+  function handleTokenCheck() {
+    if (localStorage.getItem("token")) {
+      const token = localStorage.getItem("token");
+      auth.checkToken(token)
+        .then(res => {
+          if (res) {
+            setEmailUser(res.data.email)
+            setLoggedIn(true)
+            navigate("/", { replace: true })
+          }
+        })
+    }
+  }
   function handleCardClick(card) {
     setSelectedCard(card);
   }
@@ -62,6 +122,7 @@ function App() {
     setIsAddPlacePopupOpen(false)
     setIsEditAvatarPopupOpen(false)
     setIsDeleteCardPopupOpen(false)
+    setIsInfoToolTip(false)
     setSelectedCard({})
   }
   function handleCardLike(card) {
@@ -132,20 +193,30 @@ function App() {
   }
 
   return (
-    <div className="wrapper">
-      <div className="container">
-        <CurrentUserContext.Provider value={currentUser}>
-          <Header />
-          <Main onCardDelete={handleCardDelete} cards={cards} onCardLike={handleCardLike} onCardClick={handleCardClick} onEditProfile={handleEditProfileClick} onAddPlace={handleAddPlaceClick} onEditAvatar={handleEditAvatarClick} />
-          <Footer />
-          <EditProfilePopup errorMessegeInput={errorMessegeInput} buttonStateForm={buttonStateForm} onValidation={validationForms} textLoadingSubmit={submitTextButton} onUpdateUser={handleUpdateUser} isOpen={isEditProfilePopupOpen} onClose={closeAllPopups} />
-          <EditAvatarPopup errorMessegeInput={errorMessegeInput} buttonStateForm={buttonStateForm} onValidation={validationForms} textLoadingSubmit={submitTextButton} onUpdateAvatar={handleUpdateAvatar} isOpen={isEditAvatarPopupOpen} onClose={closeAllPopups} />
-          <AddPlacePopup errorMessegeInput={errorMessegeInput} buttonStateForm={buttonStateForm} onValidation={validationForms} textLoadingSubmit={submitTextButton} cards={cards} onAddPlace={handleAddPlaceSubmit} isOpen={isAddPlacePopupOpen} onClose={closeAllPopups} />
-          <ImagePopup onClose={closeAllPopups} name={"img"} card={selectedCard} />
-          <DeleteCardPopup onCardDelete={handleCardDelete} onClose={closeAllPopups} textLoadingSubmit={submitTextButton} isOpen={isDeleteCardPopupOpen} onSubmit={submitDeleteCard} card={dataCardDelete} />
-        </CurrentUserContext.Provider>
-      </div>
-    </div>
+    <CurrentUserContext.Provider value={currentUser}>
+      <Routes>
+        <Route path="/mesto-react" element={loggedIn ? <Navigate to="/" replace /> : <Navigate to="/sign-in" replace />} />
+        <Route path="/sign-up" element={<Register onRegisterUser={registerNewUser} />} />
+        <Route path="/sign-in" element={<Login onAuthorization={authorizationUser} />} />
+        <Route path="/" element={<ProtectedRoute loggedIn={loggedIn} element={<Main
+          exitAccount={logout}
+          emailUser={emailUser}
+          onCardDelete={handleCardDelete}
+          cards={cards}
+          onCardLike={handleCardLike}
+          onCardClick={handleCardClick}
+          onEditProfile={handleEditProfileClick}
+          onAddPlace={handleAddPlaceClick}
+          onEditAvatar={handleEditAvatarClick} />} />} />
+      </Routes>
+      {loggedIn && <Footer />}
+      <InfoTooltip text={isTextInfoToolTip} isOpen={isInfoToolTip} onClose={closeAllPopups} />
+      <EditProfilePopup errorMessegeInput={errorMessegeInput} buttonStateForm={buttonStateForm} onValidation={validationForms} textLoadingSubmit={submitTextButton} onUpdateUser={handleUpdateUser} isOpen={isEditProfilePopupOpen} onClose={closeAllPopups} />
+      <EditAvatarPopup errorMessegeInput={errorMessegeInput} buttonStateForm={buttonStateForm} onValidation={validationForms} textLoadingSubmit={submitTextButton} onUpdateAvatar={handleUpdateAvatar} isOpen={isEditAvatarPopupOpen} onClose={closeAllPopups} />
+      <AddPlacePopup errorMessegeInput={errorMessegeInput} buttonStateForm={buttonStateForm} onValidation={validationForms} textLoadingSubmit={submitTextButton} cards={cards} onAddPlace={handleAddPlaceSubmit} isOpen={isAddPlacePopupOpen} onClose={closeAllPopups} />
+      <ImagePopup onClose={closeAllPopups} name={"img"} card={selectedCard} />
+      <DeleteCardPopup onCardDelete={handleCardDelete} onClose={closeAllPopups} textLoadingSubmit={submitTextButton} isOpen={isDeleteCardPopupOpen} onSubmit={submitDeleteCard} card={dataCardDelete} />
+    </CurrentUserContext.Provider>
   );
 }
 
