@@ -38,13 +38,19 @@ function App() {
 
   useEffect(() => {
     handleTokenCheck()
-    Promise.all([api.getUserInfo(), api.getInitialCards()])
-      .then(([userInfo, cards]) => {
-        setCurrentUser(userInfo)
-        setCards(cards)
-      })
-      .catch(err => console.log(`Ошибка ${err}`));
   }, [])
+
+  useEffect(() => {
+    if (loggedIn) {
+      Promise.all([api.getUserInfo(), api.getInitialCards()])
+        .then(([userInfo, cards]) => {
+          setCurrentUser(userInfo)
+          setCards(cards)
+        })
+        .catch(err => console.log(`Ошибка ${err}`));
+    }
+  }, [loggedIn])
+
   useEffect(() => {
     if (isEditProfilePopupOpen) {
       setButtonStateForm(false)
@@ -80,9 +86,9 @@ function App() {
         if (res.token) {
           localStorage.setItem("token", res.token);
           setLoggedIn(true)
+          setEmailUser(data.email)
           navigate("/", { replace: true })
         }
-        handleTokenCheck()
       })
       .catch(() => {
         setIsInfoToolTip(isInfoToolTip => !isInfoToolTip)
@@ -90,8 +96,8 @@ function App() {
       })
   }
   function handleTokenCheck() {
-    if (localStorage.getItem("token")) {
-      const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    if (token) {
       auth.checkToken(token)
         .then(res => {
           if (res) {
@@ -100,6 +106,7 @@ function App() {
             navigate("/", { replace: true })
           }
         })
+        .catch(err => console.log(err))
     }
   }
   function handleCardClick(card) {
@@ -195,7 +202,7 @@ function App() {
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <Routes>
-        <Route path="/mesto-react" element={loggedIn ? <Navigate to="/" replace /> : <Navigate to="/sign-in" replace />} />
+        <Route path="/react-mesto-auth/" element={loggedIn ? <Navigate to="/" replace /> : <Navigate to="/sign-in" replace />} />
         <Route path="/sign-up" element={<Register onRegisterUser={registerNewUser} />} />
         <Route path="/sign-in" element={<Login onAuthorization={authorizationUser} />} />
         <Route path="/" element={<ProtectedRoute loggedIn={loggedIn} element={<Main
